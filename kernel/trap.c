@@ -100,20 +100,6 @@ print_regs(struct PushRegs *regs)
 static void
 trap_dispatch(struct Trapframe *tf)
 {
-  /* TODO: Handle specific interrupts.
-   *       You need to check the interrupt number in order to tell
-   *       which interrupt is currently happening since every interrupt
-   *       comes to this function called by default_trap_handler.
-   *
-   * NOTE: Checkout the Trapframe data structure for interrupt number,
-   *       which we had pushed into the stack when going through the
-   *       declared interface in trap_entry.S
-   *
-   *       The interrupt number is defined in inc/trap.h
-   *
-   *       We prepared the keyboard handler and timer handler for you
-   *       already. Please reference in kernel/kbd.c and kernel/timer.c
-   */
 	switch ( tf->tf_trapno ) {
 	case IRQ_OFFSET + IRQ_KBD:
 		kbd_intr();
