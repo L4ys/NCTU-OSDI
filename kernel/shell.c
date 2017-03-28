@@ -29,14 +29,15 @@ int mon_help(int argc, char **argv)
 
 int mon_kerninfo(int argc, char **argv)
 {
-	/* TODO: Print the kernel code and data section size 
-   * NOTE: You can count only linker script (kernel/kern.ld) to
-   *       provide you with those information.
-   *       Use PROVIDE inside linker script and calculate the
-   *       offset.
-   */
+	extern uint32_t kernel_load_addr, etext;
+	extern uint32_t kernel_data_addr, end;
+	cprintf("Kernel code base start=0x%08X size = %d\n", kernel_load_addr, etext - kernel_load_addr);
+	cprintf("Kernel data base start=0x%08X size = %d\n", kernel_data_addr, end - kernel_data_addr);
+	cprintf("Kernel executable memory footprint: %dKB\n", (end - kernel_load_addr) / 1024);
+
 	return 0;
 }
+
 int print_tick(int argc, char **argv)
 {
 	cprintf("Now tick = %d\n", get_tick());
