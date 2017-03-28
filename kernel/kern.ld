@@ -42,6 +42,7 @@ SECTIONS
 	. = ALIGN(0x1000);
 
 	/* The data segment */
+	PROVIDE(kernel_data_addr = .);
 	.data : {
 		*(.data)
 	}
