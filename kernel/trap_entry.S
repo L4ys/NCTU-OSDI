@@ -22,8 +22,8 @@ TRAPHANDLER_NOEC(timer_trap_handler, IRQ_OFFSET + IRQ_TIMER)
 
 .globl default_trap_handler;
 _alltraps:
-	push %es
 	push %ds
+	push %es
 	pushal
 
 	pushl %esp # Pass a pointer which points to the Trapframe as an argument to default_trap_handler()
@@ -31,8 +31,8 @@ _alltraps:
 	add $4, %esp
 
 	popal
-	pop %ds
 	pop %es
+	pop %ds
 
 	add $8, %esp # Cleans up the pushed error code and pushed ISR number
 	iret # pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!
