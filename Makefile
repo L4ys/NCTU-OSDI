@@ -15,6 +15,7 @@ CFLAGS += -I.
 
 OBJDIR = .
 
+.DEFAULT_GOAL := all
 
 include boot/Makefile
 include kernel/Makefile
@@ -24,7 +25,7 @@ all: boot/boot kernel/system
 	dd if=$(OBJDIR)/boot/boot of=$(OBJDIR)/kernel.img conv=notrunc 2>/dev/null
 	dd if=$(OBJDIR)/kernel/system of=$(OBJDIR)/kernel.img seek=1 conv=notrunc 2>/dev/null
 
-run:
+run: all
 	qemu-system-i386 -hda kernel.img -monitor stdio
 
 clean:
