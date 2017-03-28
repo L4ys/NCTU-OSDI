@@ -1,7 +1,7 @@
 
 GCC_LIB := $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
-KERN_LDFLAGS = -T kernel/kern.ld
+KERN_LDFLAGS = $(LDFLAGS) -T kernel/kern.ld
 
 KERN_SRCFILES := kernel/entry.S \
 		kernel/main.c \
