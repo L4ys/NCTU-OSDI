@@ -10,6 +10,10 @@
 extern struct Gatedesc idt[];
 extern struct Pseudodesc idt_pd;
 
+/* Trap handlers */
+extern void kbd_trap_handler();
+extern void timer_trap_handler();
+
 void trap_init(void);
 //void trap_init_percpu(void);
 void print_regs(struct PushRegs *regs);
