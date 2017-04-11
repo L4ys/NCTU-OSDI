@@ -258,14 +258,16 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 	
-    /* TODO */
-    size_t i;
-	for (i = 0; i < npages; i++) {
-
-        pages[i].pp_ref = 0;
-        pages[i].pp_link = page_free_list;
-        page_free_list = &pages[i];
-    }
+	pages[0].pp_ref = 1;
+	for ( size_t i = 1; i < npages; ++i ) {
+		if ( i >= PGNUM(IOPHYSMEM) && i < PGNUM(EXTPHYSMEM) ||
+			 i >= PGNUM(EXTPHYSMEM) && i < PGNUM(PADDR(nextfree)) ) {
+			pages[i].pp_ref = 1;
+		} else {
+			pages[i].pp_link = page_free_list;
+			page_free_list = &pages[i];
+		}
+	}
 }
 
 //
