@@ -306,7 +306,12 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
-    /* TODO */
+	assert(pp);
+	assert(pp->pp_ref == 0);
+	assert(pp->pp_link == NULL);
+
+	pp->pp_link = page_free_list;
+	page_free_list = pp;
 }
 
 //
@@ -345,8 +350,21 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
-	// Fill this function in
-    /* TODO */
+	pde_t pde = pgdir[PDX(va)];
+	pte_t* pgtab;
+
+	if ( pde & PTE_P ) {
+		pgtab = (pte_t*)KADDR(PTE_ADDR(pde));
+	} else {
+		// Create a page table and put into page directory
+		struct PageInfo* pp;
+		if ( !create || !(pp = page_alloc(ALLOC_ZERO)) )
+			return NULL;
+		++pp->pp_ref;
+		pgtab = page2kva(pp);
+		pgdir[PDX(va)] = page2pa(pp) | PTE_P | PTE_U | PTE_W;
+	}
+	return pgtab + PTX(va);
 }
 
 //
