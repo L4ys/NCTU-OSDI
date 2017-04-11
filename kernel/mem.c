@@ -285,7 +285,15 @@ page_init(void)
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
-    /* TODO */
+	struct PageInfo *pp = page_free_list;
+
+	if ( page_free_list ) {
+		page_free_list = page_free_list->pp_link;
+		if ( alloc_flags & ALLOC_ZERO )
+			memset(page2kva(pp), 0, PGSIZE);
+		pp->pp_link = NULL;
+	}
+	return pp;
 }
 
 //
