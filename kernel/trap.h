@@ -13,6 +13,7 @@ extern struct Pseudodesc idt_pd;
 /* Trap handlers */
 extern void kbd_trap_handler();
 extern void timer_trap_handler();
+extern void page_fault_trap_handler();
 
 void trap_init(void);
 //void trap_init_percpu(void);
