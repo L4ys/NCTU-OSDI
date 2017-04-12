@@ -28,6 +28,9 @@ all: boot/boot kernel/system
 run: all
 	qemu-system-i386 -hda kernel.img -monitor stdio
 
+run-ssh: all
+	qemu-system-i386 -hda kernel.img -monitor stdio -curses
+
 clean:
 	rm -rf $(OBJDIR)/boot/*.o $(OBJDIR)/boot/boot.out $(OBJDIR)/boot/boot $(OBJDIR)/boot/boot.asm
 	rm -rf $(OBJDIR)/kernel/*.o $(OBJDIR)/kernel/system* kernel.*
