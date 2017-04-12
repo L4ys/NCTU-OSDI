@@ -260,8 +260,8 @@ page_init(void)
 	
 	pages[0].pp_ref = 1;
 	for ( size_t i = 1; i < npages; ++i ) {
-		if ( i >= PGNUM(IOPHYSMEM) && i < PGNUM(EXTPHYSMEM) ||
-			 i >= PGNUM(EXTPHYSMEM) && i < PGNUM(PADDR(nextfree)) ) {
+		if ( (i >= PGNUM(IOPHYSMEM) && i < PGNUM(EXTPHYSMEM)) ||
+			 (i >= PGNUM(EXTPHYSMEM) && i < PGNUM(PADDR(nextfree))) ) {
 			pages[i].pp_ref = 1;
 		} else {
 			pages[i].pp_link = page_free_list;
