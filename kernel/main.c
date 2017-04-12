@@ -23,7 +23,7 @@ void kernel_main(void)
 
     /* Test for page fault handler */
     ptr = (int*)(0x12345678);
-    //*ptr = 1;
+    *ptr = 1;
 
 	shell();
 }
