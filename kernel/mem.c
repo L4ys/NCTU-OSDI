@@ -381,7 +381,20 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-    /* TODO */
+	assert(size % PGSIZE == 0);
+	assert(va % PGSIZE == 0);
+	assert(pa % PGSIZE == 0);
+
+	while ( size ) { 
+		pte_t* pte = pgdir_walk(pgdir, va, 1);
+		if ( !pte )
+			panic("pgdir_walk() failed!");
+
+		*pte = pa | perm | PTE_P;
+		va += PGSIZE;
+		pa += PGSIZE;
+        size -= PGSIZE;
+	}
 }
 
 //
