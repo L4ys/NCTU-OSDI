@@ -39,7 +39,7 @@ void kernel_main(void)
     lcr3(PADDR(cur_task->pgdir));
 
     /* Move to user mode */
-    asm volatile("movl %0,%%eax\n\t" \
+    __asm __volatile("movl %0,%%eax\n\t" \
             "pushl %1\n\t" \
             "pushl %%eax\n\t" \
             "pushfl\n\t" \

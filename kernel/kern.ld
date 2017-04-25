@@ -24,7 +24,7 @@ SECTIONS
         lib/syscall.o (.text)
         user/shell.o (.text)
         user/main.o (.text)
-        /usr/lib/gcc/x86_64-linux-gnu/6.2.0/32/libgcc.a (.*)
+        /usr/lib/gcc/x86_64-linux-gnu/4.9/32/libgcc.a (.*)
         PROVIDE(UTEXT_end = .);
         *(.text .stub .text.* .gnu.linkonce.t.*)
     }

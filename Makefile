@@ -1,5 +1,5 @@
 # Makefile for the simple kernel.
-CC	=gcc
+CC	=gcc-4.9
 AS	=as
 LD	=ld
 OBJCOPY = objcopy
@@ -32,12 +32,12 @@ clean:
 	rm -rf $(OBJDIR)/user/*.o
 	rm -rf $(OBJDIR)/user/*.asm
 
-qemu:
+qemu: all
 	qemu-system-i386 -hda kernel.img -monitor stdio
 
-debug:
+debug: all
 	qemu-system-i386 -hda kernel.img -monitor stdio -s -S
 
-run-ssh:
+curse: all
 	qemu-system-i386 -hda kernel.img -monitor stdio -curses
 

@@ -262,7 +262,7 @@ static __inline void
 cpuid(uint32_t info, uint32_t *eaxp, uint32_t *ebxp, uint32_t *ecxp, uint32_t *edxp)
 {
 	uint32_t eax, ebx, ecx, edx;
-	asm volatile("cpuid"
+	__asm __volatile("cpuid"
 		: "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
 		: "a" (info));
 	if (eaxp)
@@ -289,7 +289,7 @@ xchg(volatile uint32_t *addr, uint32_t newval)
 	uint32_t result;
 
 	// The + in "+m" denotes a read-modify-write operand.
-	asm volatile("lock; xchgl %0, %1" :
+	__asm __volatile("lock; xchgl %0, %1" :
 			"+m" (*addr), "=a" (result) :
 			"1" (newval) :
 			"cc");
