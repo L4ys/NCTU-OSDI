@@ -131,11 +131,6 @@ env_pop_tf(struct Trapframe *tf)
 	panic("iret failed");  /* mostly to placate the compiler */
 }
 
-static void page_fault_handler() {
-	cprintf("[0556525] Page fault @ %p", rcr2());
-	while(1);
-}
-
 	static void
 trap_dispatch(struct Trapframe *tf)
 {
