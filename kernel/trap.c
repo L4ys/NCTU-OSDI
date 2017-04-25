@@ -1,4 +1,7 @@
 #include <kernel/trap.h>
+#include <kernel/task.h>
+#include <kernel/mem.h>
+#include <inc/assert.h>
 #include <inc/mmu.h>
 #include <inc/x86.h>
 
@@ -8,13 +11,18 @@
  */
 static struct Trapframe *last_tf;
 
-struct Gatedesc idt[256];
+
+/* Interrupt descriptor table.  (Must be built at run time because
+ * shifted function addresses can't be represented in relocation records.)
+ */
+struct Gatedesc idt[256] = { { 0 } };
 struct Pseudodesc idt_pd = {
-	(uint16_t)(sizeof(idt) - 1),	// pd_lim
-	(uint32_t)idt					// pd_base
+	sizeof(idt) - 1, (uint32_t) idt
 };
 
-/* For debugging */
+/* Trap handlers */
+TrapHandler trap_hnd[256] = { 0 };
+
 static const char *trapname(int trapno)
 {
 	static const char * const excnames[] = {
@@ -49,52 +57,78 @@ static const char *trapname(int trapno)
 	return "(unknown trap)";
 }
 
-/* For debugging */
-void
+	void
 print_trapframe(struct Trapframe *tf)
 {
-	cprintf("TRAP frame at %p \n");
+	printk("TRAP frame at %p \n", tf);
 	print_regs(&tf->tf_regs);
-	cprintf("  es   0x----%04x\n", tf->tf_es);
-	cprintf("  ds   0x----%04x\n", tf->tf_ds);
-	cprintf("  trap 0x%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
+	printk("  es   0x----%04x\n", tf->tf_es);
+	printk("  ds   0x----%04x\n", tf->tf_ds);
+	printk("  trap 0x%08x %s\n", tf->tf_trapno, trapname(tf->tf_trapno));
 	// If this trap was a page fault that just happened
 	// (so %cr2 is meaningful), print the faulting linear address.
 	if (tf == last_tf && tf->tf_trapno == T_PGFLT)
-		cprintf("  cr2  0x%08x\n", rcr2());
-	cprintf("  err  0x%08x", tf->tf_err);
+		printk("  cr2  0x%08x\n", rcr2());
+	printk("  err  0x%08x", tf->tf_err);
 	// For page faults, print decoded fault error code:
 	// U/K=fault occurred in user/kernel mode
 	// W/R=a write/read caused the fault
 	// PR=a protection violation caused the fault (NP=page not present).
 	if (tf->tf_trapno == T_PGFLT)
-		cprintf(" [%s, %s, %s]\n",
-			tf->tf_err & 4 ? "user" : "kernel",
-			tf->tf_err & 2 ? "write" : "read",
-			tf->tf_err & 1 ? "protection" : "not-present");
+		printk(" [%s, %s, %s]\n",
+				tf->tf_err & 4 ? "user" : "kernel",
+				tf->tf_err & 2 ? "write" : "read",
+				tf->tf_err & 1 ? "protection" : "not-present");
 	else
-		cprintf("\n");
-	cprintf("  eip  0x%08x\n", tf->tf_eip);
-	cprintf("  cs   0x----%04x\n", tf->tf_cs);
-	cprintf("  flag 0x%08x\n", tf->tf_eflags);
+		printk("\n");
+	printk("  eip  0x%08x\n", tf->tf_eip);
+	printk("  cs   0x----%04x\n", tf->tf_cs);
+	printk("  flag 0x%08x\n", tf->tf_eflags);
 	if ((tf->tf_cs & 3) != 0) {
-		cprintf("  esp  0x%08x\n", tf->tf_esp);
-		cprintf("  ss   0x----%04x\n", tf->tf_ss);
+		printk("  esp  0x%08x\n", tf->tf_esp);
+		printk("  ss   0x----%04x\n", tf->tf_ss);
+	}
+}
+	void
+print_regs(struct PushRegs *regs)
+{
+	printk("  edi  0x%08x\n", regs->reg_edi);
+	printk("  esi  0x%08x\n", regs->reg_esi);
+	printk("  ebp  0x%08x\n", regs->reg_ebp);
+	printk("  oesp 0x%08x\n", regs->reg_oesp);
+	printk("  ebx  0x%08x\n", regs->reg_ebx);
+	printk("  edx  0x%08x\n", regs->reg_edx);
+	printk("  ecx  0x%08x\n", regs->reg_ecx);
+	printk("  eax  0x%08x\n", regs->reg_eax);
+}
+
+void register_handler(int trapno, TrapHandler hnd, void (*trap_entry)(void), int isTrap, int dpl)
+{
+	if (trapno >= 0 && trapno < 256 && trap_entry != NULL)
+	{
+		trap_hnd[trapno] = hnd;
+		/* Set trap gate */
+		SETGATE(idt[trapno], isTrap, GD_KT, trap_entry, dpl);
 	}
 }
 
-/* For debugging */
-void
-print_regs(struct PushRegs *regs)
+//
+// Restores the register values in the Trapframe with the 'iret' instruction.
+// This exits the kernel and starts executing some environment's code.
+//
+// This function does not return.
+//
+	void
+env_pop_tf(struct Trapframe *tf)
 {
-	cprintf("  edi  0x%08x\n", regs->reg_edi);
-	cprintf("  esi  0x%08x\n", regs->reg_esi);
-	cprintf("  ebp  0x%08x\n", regs->reg_ebp);
-	cprintf("  oesp 0x%08x\n", regs->reg_oesp);
-	cprintf("  ebx  0x%08x\n", regs->reg_ebx);
-	cprintf("  edx  0x%08x\n", regs->reg_edx);
-	cprintf("  ecx  0x%08x\n", regs->reg_ecx);
-	cprintf("  eax  0x%08x\n", regs->reg_eax);
+	__asm __volatile("movl %0,%%esp\n"
+			"\tpopal\n"
+			"\tpopl %%es\n"
+			"\tpopl %%ds\n"
+			"\taddl $0x8,%%esp\n" /* skip tf_trapno and tf_errcode */
+			"\tiret"
+			: : "g" (tf) : "memory");
+	panic("iret failed");  /* mostly to placate the compiler */
 }
 
 static void page_fault_handler() {
@@ -102,28 +136,53 @@ static void page_fault_handler() {
 	while(1);
 }
 
-static void
+	static void
 trap_dispatch(struct Trapframe *tf)
 {
-	switch ( tf->tf_trapno ) {
-	case IRQ_OFFSET + IRQ_KBD:
-		kbd_intr();
-		break;
-	case IRQ_OFFSET + IRQ_TIMER:
-		timer_handler();
-		break;
-	case T_PGFLT:
-		page_fault_handler();
-		break;
-    default:
-        // Unexpected trap: The user process or the kernel has a bug.
-        print_trapframe(tf);
+	// Handle spurious interrupts
+	// The hardware sometimes raises these because of noise on the
+	// IRQ line or other reasons. We don't care.
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_SPURIOUS) {
+		printk("Spurious interrupt on irq 7\n");
+		print_trapframe(tf);
+		return;
 	}
+
+	last_tf = tf;
+	/* Lab3: Check the trap number and call the interrupt handler. */
+	if (trap_hnd[tf->tf_trapno] != NULL)
+	{
+
+		if ((tf->tf_cs & 3) == 3)
+		{
+			// Trapped from user mode.
+			extern Task *cur_task;
+
+			// Disable interrupt first
+			// Think: Why we disable interrupt here?
+			__asm __volatile("cli");
+
+			// Copy trap frame (which is currently on the stack)
+			// into 'cur_task->tf', so that running the environment
+			// will restart at the trap point.
+			cur_task->tf = *tf;
+			tf = &(cur_task->tf);
+
+		}
+		// Do ISR
+		trap_hnd[tf->tf_trapno](tf);
+
+		// Pop the kernel stack 
+		env_pop_tf(tf);
+		return;
+	}
+
+	// Unexpected trap: The user process or the kernel has a bug.
+	print_trapframe(tf);
+	panic("Unexpected trap!");
+
 }
 
-/* 
- * Note: This is the called for every interrupt.
- */
 void default_trap_handler(struct Trapframe *tf)
 {
 	// Record that tf is the last real trapframe so
@@ -135,14 +194,33 @@ void default_trap_handler(struct Trapframe *tf)
 }
 
 
+void page_fault_handler(struct Trapframe *tf)
+{
+	printk("Page fault @ %p\n", rcr2());
+	while (1);
+}
+
 void trap_init()
 {
-	/* Keyboard interrupt setup */
-	SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, kbd_trap_handler, 0);
-	/* Timer Trap setup */
-	SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, timer_trap_handler, 0);
+	int i;
+	/* Initial interrupt descrip table for all traps */
+	extern void Default_ISR();
+	for (i = 0; i < 256; i++)
+	{
+		SETGATE(idt[i], 1, GD_KT, Default_ISR, 0);
+		trap_hnd[i] = NULL;
+	}
 
-    SETGATE(idt[T_PGFLT], 0, GD_KT, page_fault_trap_handler, 0);
-	/* Load IDT */
+
+	/* Using default_trap_handler */
+	extern void GPFLT();
+	SETGATE(idt[T_GPFLT], 1, GD_KT, GPFLT, 0);
+	extern void STACK_ISR();
+	SETGATE(idt[T_STACK], 1, GD_KT, STACK_ISR, 0);
+
+	/* Using custom trap handler */
+	extern void PGFLT();
+	register_handler(T_PGFLT, page_fault_handler, PGFLT, 1, 0);
+
 	lidt(&idt_pd);
 }

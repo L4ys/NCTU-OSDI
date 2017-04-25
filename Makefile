@@ -25,13 +25,19 @@ all: boot/boot kernel/system
 	dd if=$(OBJDIR)/boot/boot of=$(OBJDIR)/kernel.img conv=notrunc 2>/dev/null
 	dd if=$(OBJDIR)/kernel/system of=$(OBJDIR)/kernel.img seek=1 conv=notrunc 2>/dev/null
 
-run: all
-	qemu-system-i386 -hda kernel.img -monitor stdio
-
-run-ssh: all
-	qemu-system-i386 -hda kernel.img -monitor stdio -curses
-
 clean:
 	rm -rf $(OBJDIR)/boot/*.o $(OBJDIR)/boot/boot.out $(OBJDIR)/boot/boot $(OBJDIR)/boot/boot.asm
 	rm -rf $(OBJDIR)/kernel/*.o $(OBJDIR)/kernel/system* kernel.*
 	rm -rf $(OBJDIR)/lib/*.o
+	rm -rf $(OBJDIR)/user/*.o
+	rm -rf $(OBJDIR)/user/*.asm
+
+qemu:
+	qemu-system-i386 -hda kernel.img -monitor stdio
+
+debug:
+	qemu-system-i386 -hda kernel.img -monitor stdio -s -S
+
+run-ssh:
+	qemu-system-i386 -hda kernel.img -monitor stdio -curses
+

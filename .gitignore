@@ -1,8 +1,7 @@
 *.o
 *.out
 *.img
+*.asm
 boot/boot
-boot/boot.asm
 kernel/system
-kernel/system.asm
 kernel/system.sym
