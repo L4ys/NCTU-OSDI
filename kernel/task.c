@@ -142,7 +142,7 @@ int task_create()
 }
 
 
-/* TODO: Lab5
+/*
  * This function free the memory allocated by kernel.
  *
  * 1. Be sure to change the page directory to kernel's page
@@ -173,13 +173,10 @@ static void task_free(int pid)
 
 void sys_kill(int pid)
 {
-	if (pid > 0 && pid < NR_TASKS)
-	{
-	/* TODO: Lab 5
-   * Remember to change the state of tasks
-   * Free the memory
-   * and invoke the scheduler for yield
-   */
+	if ( pid > 0 && pid < NR_TASKS ) {
+        tasks[pid].state = TASK_FREE;
+        task_free(pid);
+        sched_yield();
 	}
 }
 
@@ -222,7 +219,7 @@ int sys_fork()
 	}
 }
 
-/* TODO: Lab5
+/*
  * We've done the initialization for you,
  * please make sure you understand the code.
  */
