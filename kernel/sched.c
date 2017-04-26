@@ -36,6 +36,6 @@ void sched_yield(void)
     cur_task = &tasks[pid];
     cur_task->state = TASK_RUNNING;
     cur_task->remind_ticks = TIME_QUANT;
-    lcr3(cur_task->pgdir);
+    lcr3(PADDR(cur_task->pgdir));
     ctx_switch(cur_task);
 }
