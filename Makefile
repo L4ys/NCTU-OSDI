@@ -38,6 +38,6 @@ qemu: all
 debug: all
 	qemu-system-i386 -hda kernel.img -monitor stdio -s -S
 
-curse: all
+run: all
 	qemu-system-i386 -hda kernel.img -monitor stdio -curses
 

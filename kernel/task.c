@@ -100,12 +100,29 @@ int task_create()
 	Task *ts = NULL;
 
 	/* Find a free task structure */
+    int i;
+    for ( i = 0; i < NR_TASKS; ++i )
+        if ( tasks[i].state == TASK_FREE ) {
+            ts = &tasks[i];
+            break;
+        }
+
+    if ( !ts )
+        return -1;
 
   /* Setup Page Directory and pages for kernel*/
   if (!(ts->pgdir = setupkvm()))
     panic("Not enough memory for per process page directory!\n");
 
   /* Setup User Stack */
+    int va;
+    for ( va = USTACKTOP; va > USTACKTOP - USR_STACK_SIZE; va -= PGSIZE ) {
+        struct PageInfo* pp = page_alloc(ALLOC_ZERO);
+        if ( !pp )
+            return -1;
+        if ( page_insert(ts->pgdir, pp, va - PGSIZE, PTE_W | PTE_U) )
+            return -1;
+    }
 
 	/* Setup Trapframe */
 	memset( &(ts->tf), 0, sizeof(ts->tf));
@@ -117,6 +134,11 @@ int task_create()
 	ts->tf.tf_esp = USTACKTOP-PGSIZE;
 
 	/* Setup task structure (task_id and parent_id) */
+    ts->task_id = i;
+    ts->parent_id = cur_task ? cur_task->task_id:0;
+    ts->remind_ticks = TIME_QUANT;
+    ts->state = TASK_RUNNABLE;
+    return i;
 }
 
 
