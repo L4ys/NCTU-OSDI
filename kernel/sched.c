@@ -19,13 +19,14 @@
 * 4. CONTEXT SWITCH, leverage the macro ctx_switch(ts)
 *    Please make sure you understand the mechanism.
 */
+
 void sched_yield(void)
 {
 	extern Task tasks[];
 	extern Task *cur_task;
 
     int pid;
-    for ( pid = (cur_task->task_id + 1 % NR_TASKS); // starts from next
+    for ( pid = ((cur_task->task_id + 1) % NR_TASKS); // starts from next
           pid != cur_task->task_id;
           pid = (pid + 1) % NR_TASKS )
     {
