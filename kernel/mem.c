@@ -541,6 +541,16 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 pde_t *
 setupkvm()
 {
+    pde_t *pgdir = NULL;
+    struct PageInfo* pp = page_alloc(ALLOC_ZERO);
+    if ( pp ) {
+        pgdir = page2kva(pp);
+        boot_map_region(pgdir, UPAGES, ROUNDUP((sizeof(struct PageInfo) * npages), PGSIZE), PADDR(pages), PTE_U);
+        boot_map_region(pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+        boot_map_region(pgdir, KERNBASE, ~KERNBASE + 1, 0, PTE_W);
+        boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, PTE_W);
+    }
+    return pgdir;
 }
 
 
