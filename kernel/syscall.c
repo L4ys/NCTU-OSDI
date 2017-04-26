@@ -44,13 +44,10 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 		break;
 
 	case SYS_sleep:
-		/* TODO: Lab 5
-     * Yield this task
-     * You can reference kernel/sched.c for yielding the task
-     */
 		break;
 
     case SYS_kill:
+        retVal = sys_kill(a1);
         break;
 
     case SYS_get_num_free_page:

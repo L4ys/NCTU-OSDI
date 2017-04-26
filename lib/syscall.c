@@ -57,7 +57,7 @@ void sleep(uint32_t ticks)
 
 void kill_self()
 {
-    syscall(SYS_kill, 0, 0, 0, 0, 0);
+    syscall(SYS_kill, getpid(), 0, 0, 0, 0);
 }
 
 void settextcolor(unsigned char forecolor, unsigned char backcolor)
