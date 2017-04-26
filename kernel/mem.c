@@ -268,6 +268,7 @@ page_init(void)
 		} else {
 			pages[i].pp_link = page_free_list;
 			page_free_list = &pages[i];
+            ++num_free_pages;
 		}
 	}
 }
@@ -294,6 +295,7 @@ page_alloc(int alloc_flags)
 		if ( alloc_flags & ALLOC_ZERO )
 			memset(page2kva(pp), 0, PGSIZE);
 		pp->pp_link = NULL;
+        --num_free_pages;
 	}
 	return pp;
 }
@@ -314,6 +316,7 @@ page_free(struct PageInfo *pp)
 
 	pp->pp_link = page_free_list;
 	page_free_list = pp;
+    ++num_free_pages;
 }
 
 //
