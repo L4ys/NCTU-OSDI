@@ -100,10 +100,10 @@ int task_create()
 	Task *ts = NULL;
 
 	/* Find a free task structure */
-    int i;
-    for ( i = 0; i < NR_TASKS; ++i )
-        if ( tasks[i].state == TASK_FREE ) {
-            ts = &tasks[i];
+    int pid;
+    for ( pid = 0; pid < NR_TASKS; ++pid )
+        if ( tasks[pid].state == TASK_FREE ) {
+            ts = &tasks[pid];
             break;
         }
 
@@ -116,11 +116,11 @@ int task_create()
 
   /* Setup User Stack */
     int va;
-    for ( va = USTACKTOP; va > USTACKTOP - USR_STACK_SIZE; va -= PGSIZE ) {
+    for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE ) {
         struct PageInfo* pp = page_alloc(ALLOC_ZERO);
         if ( !pp )
             return -1;
-        if ( page_insert(ts->pgdir, pp, va - PGSIZE, PTE_W | PTE_U) )
+        if ( page_insert(ts->pgdir, pp, va, PTE_W | PTE_U) )
             return -1;
     }
 
@@ -134,11 +134,11 @@ int task_create()
 	ts->tf.tf_esp = USTACKTOP-PGSIZE;
 
 	/* Setup task structure (task_id and parent_id) */
-    ts->task_id = i;
+    ts->task_id = pid;
     ts->parent_id = cur_task ? cur_task->task_id:0;
     ts->remind_ticks = TIME_QUANT;
     ts->state = TASK_RUNNABLE;
-    return i;
+    return pid;
 }
 
 
@@ -161,6 +161,14 @@ int task_create()
  */
 static void task_free(int pid)
 {
+    lcr3(PADDR(kern_pgdir));
+    // remove user stack
+    int va;
+    for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE )
+        page_remove(tasks[pid].pgdir, va);
+
+    ptable_remove(tasks[pid].pgdir);
+    pgdir_remove(tasks[pid].pgdir);
 }
 
 void sys_kill(int pid)

@@ -533,7 +533,7 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 }
 
 
-/* TODO: Lab 5
+/* 
  * Set up kernel part of a page table.
  * You should map the kernel part memory with appropriate permission
  * Return a pointer to newly created page directory
@@ -553,10 +553,6 @@ setupkvm()
     return pgdir;
 }
 
-
-/* TODO: Lab 5
- * Please maintain num_free_pages yourself
- */
 /* This is the system call implementation of get_num_free_page */
 int32_t
 sys_get_num_free_page(void)
