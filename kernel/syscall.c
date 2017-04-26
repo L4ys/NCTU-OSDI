@@ -44,10 +44,13 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 		break;
 
 	case SYS_sleep:
+        cur_task->state = TASK_SLEEP;
+        cur_task->remind_ticks = a1;
+        sched_yield();
 		break;
 
     case SYS_kill:
-        retVal = sys_kill(a1);
+        sys_kill(a1);
         break;
 
     case SYS_get_num_free_page:
