@@ -20,43 +20,52 @@ void set_timer(int hz)
 /* It is timer interrupt handler */
 void timer_handler(struct Trapframe *tf)
 {
-  extern void sched_yield();
-  int i;
+    extern void sched_yield();
+    int i;
 
-  jiffies++;
+    jiffies++;
 
-  extern Task tasks[];
+    extern Task tasks[];
 
-  extern Task *cur_task;
+    extern Task *cur_task;
 
-  if (cur_task != NULL)
-  {
-  /* TODO: Lab 5
-   * 1. Maintain the status of slept tasks
-   * 
-   * 2. Change the state of the task if needed
-   *
-   * 3. Maintain the time quantum of the current task
-   *
-   * 4. sched_yield() if the time is up for current task
-   *
-   */
-  }
+    if (cur_task != NULL)
+    {
+        /*
+         * 1. Maintain the status of slept tasks
+         * 
+         * 2. Change the state of the task if needed
+         *
+         * 3. Maintain the time quantum of the current task
+         *
+         * 4. sched_yield() if the time is up for current task
+         *
+         */
+        for ( i = 0; i < NR_TASKS; ++i ) {
+            if ( tasks[i].state == TASK_SLEEP &&
+                    --tasks[i].remind_ticks <= 0 )
+                tasks[i].state = TASK_RUNNABLE;
+        }
+        if ( --cur_task->remind_ticks <=0 ) {
+            cur_task->state = TASK_RUNNABLE;
+            sched_yield();
+        }
+    }
 }
 
 unsigned long sys_get_ticks()
 {
-  return jiffies;
+    return jiffies;
 }
 void timer_init()
 {
-  set_timer(TIME_HZ);
+    set_timer(TIME_HZ);
 
-  /* Enable interrupt */
-  irq_setmask_8259A(irq_mask_8259A & ~(1<<IRQ_TIMER));
+    /* Enable interrupt */
+    irq_setmask_8259A(irq_mask_8259A & ~(1<<IRQ_TIMER));
 
-  /* Register trap handler */
-  extern void TIM_ISR();
-  register_handler( IRQ_OFFSET + IRQ_TIMER, &timer_handler, &TIM_ISR, 0, 0);
+    /* Register trap handler */
+    extern void TIM_ISR();
+    register_handler( IRQ_OFFSET + IRQ_TIMER, &timer_handler, &TIM_ISR, 0, 0);
 }
 
