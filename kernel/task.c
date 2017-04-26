@@ -165,7 +165,7 @@ static void task_free(int pid)
     // remove user stack
     int va;
     for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE )
-        page_remove(tasks[pid].pgdir, va);
+        page_remove(tasks[pid].pgdir, (void*)va);
 
     ptable_remove(tasks[pid].pgdir);
     pgdir_remove(tasks[pid].pgdir);
@@ -180,7 +180,7 @@ void sys_kill(int pid)
 	}
 }
 
-/* TODO: Lab 5
+/* 
  * In this function, you have several things todo
  *
  * 1. Use task_create() to create an empty task, return -1
@@ -206,17 +206,33 @@ void sys_kill(int pid)
  */
 int sys_fork()
 {
-  /* pid for newly created process */
-  int pid;
-	if ((uint32_t)cur_task)
-	{
-    /* Step 4: All user program use the same code for now */
-    setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+    /* pid for newly created process */
+    int pid = task_create();
+    if ( pid == -1 )
+        return -1;
 
-	}
+    if ((uint32_t)cur_task)
+    {
+        Task* child = &tasks[pid];
+        child->tf = cur_task->tf;
+
+        // Copy stack
+		int va;
+		for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE ) {
+            pte_t* pte_src = pgdir_walk(cur_task->pgdir, (void*)va, 0);
+            pte_t* pte_dst = pgdir_walk(child->pgdir, (void*)va, 0);
+            memcpy(KADDR(PTE_ADDR(*pte_dst)), KADDR(PTE_ADDR(*pte_src)), PGSIZE);
+		}
+
+        /* Step 4: All user program use the same code for now */
+        setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+        setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+        setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+        setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+
+        child->tf.tf_regs.reg_eax = 0;
+    }
+    return pid;
 }
 
 /*
