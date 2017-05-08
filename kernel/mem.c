@@ -197,7 +197,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
-    // boot_map_region(kern_pgdir, KERNBASE, ~KERNBASE + 1, 0, PTE_W);
+    boot_map_region(kern_pgdir, KERNBASE, ~KERNBASE + 1, 0, PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map VA range [IOPHYSMEM, EXTPHYSMEM) to PA range [IOPHYSMEM, EXTPHYSMEM)
@@ -251,9 +251,10 @@ mem_init_mp(void)
 	//             it will fault rather than overwrite another CPU's stack.
 	//             Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
-	// TODO:
 	// Lab6: Your code here:
-
+    int i;
+    for ( i = 0 ; i < NCPU ; ++i )
+        boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W | PTE_P);
 }
 
 // --------------------------------------------------------------
@@ -610,7 +611,7 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
   assert(check_va2pa(pgdir, start) == PADDR((void*)start));
 }
 
-/* TODO: Lab 5 
+/* Lab 5 
  * Set up kernel part of a page table.
  * You should map the kernel part memory with appropriate permission
  * Return a pointer to newly created page directory
