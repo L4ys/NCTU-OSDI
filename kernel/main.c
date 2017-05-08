@@ -2,6 +2,7 @@
 #include <inc/kbd.h>
 #include <inc/shell.h>
 #include <inc/x86.h>
+#include <inc/string.h>
 #include <kernel/mem.h>
 #include <kernel/trap.h>
 #include <kernel/picirq.h>
@@ -62,7 +63,7 @@ void *mpentry_kstack;
 // Start the non-boot (AP) processors.
 static void boot_aps(void)
 {
-    // TODO: Lab6
+    // Lab6
     //
     // 1. Write AP entry code (kernel/mpentry.S) to unused memory
     //    at MPENTRY_PADDR. (use memmove() in lib/string.c)
@@ -76,6 +77,17 @@ static void boot_aps(void)
     //      -- Wait for the CPU to finish some basic setup in mp_main(
     // 
     // Your code here:
+    extern char mpentry_start[], mpentry_end[];
+    memmove(KADDR(MPENTRY_PADDR), mpentry_start, (mpentry_end - mpentry_start));
+
+    int i;
+    for ( i = 0 ; i < ncpu ; ++i ) {
+        if ( i != cpunum() ) {
+            mpentry_kstack = percpu_kstacks[i] + KSTKSIZE;
+            lapic_startap(cpus[i].cpu_id, MPENTRY_PADDR);
+            while ( cpus[i].cpu_status != CPU_STARTED ) {}
+        }
+    }
 }
 
 // Setup code for APs
