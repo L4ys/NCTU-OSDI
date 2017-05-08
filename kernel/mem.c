@@ -289,7 +289,7 @@ page_init(void)
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
 	
-	/* Lab6  TODO:
+	/* Lab6
 	 * 
 	 * modify your implementation to avoid adding the page at
 	 * MPENTRY_PADDR to the free list, so that we can safely
@@ -300,7 +300,8 @@ page_init(void)
     size_t i;
 	for ( i = 1; i < npages; ++i ) {
 		if ( (i >= PGNUM(IOPHYSMEM) && i < PGNUM(EXTPHYSMEM)) ||
-			 (i >= PGNUM(EXTPHYSMEM) && i < PGNUM(PADDR(nextfree))) ) {
+			 (i >= PGNUM(EXTPHYSMEM) && i < PGNUM(PADDR(nextfree))) ||
+             i == PGNUM(MPENTRY_PADDR) ) {
 			pages[i].pp_ref = 1;
 		} else {
 			pages[i].pp_link = page_free_list;
