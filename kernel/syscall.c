@@ -1,6 +1,7 @@
 #include <kernel/task.h>
 #include <kernel/timer.h>
 #include <kernel/mem.h>
+#include <kernel/cpu.h>
 #include <kernel/syscall.h>
 #include <kernel/trap.h>
 #include <inc/stdio.h>
@@ -41,6 +42,11 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 
 	case SYS_getpid:
         retVal = cur_task->task_id;
+		break;
+
+	case SYS_getcid:
+		/* Lab6: get current cpu's cid */
+		retVal = thiscpu->cpu_id;
 		break;
 
 	case SYS_sleep:

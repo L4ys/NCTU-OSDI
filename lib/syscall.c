@@ -38,6 +38,7 @@ syscall(int num, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5
 
 
 SYSCALL_NOARG(getc, int)
+SYSCALL_NOARG(getcid, int32_t)
 SYSCALL_NOARG(getpid, int32_t)
 SYSCALL_NOARG(fork, int32_t)
 SYSCALL_NOARG(get_num_used_page, int32_t)
