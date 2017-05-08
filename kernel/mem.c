@@ -595,11 +595,11 @@ mmio_map_region(physaddr_t pa, size_t size)
 	//
 	// Hint: The TA solution uses boot_map_region.
 	//
-	// Lab6 TODO
-	// Your code here:
-	
+    boot_map_region(kern_pgdir, base, ROUNDUP(size, PGSIZE), pa, PTE_PCD | PTE_PWT | PTE_W);
+    void* b = (void*)base;
+    base += ROUNDUP(size, PGSIZE);
 
-	panic("mmio_map_region not implemented");
+    return b;
 }
 
 /* This is a simple wrapper function for mapping user program */
