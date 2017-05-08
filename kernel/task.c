@@ -70,7 +70,7 @@ Task *cur_task = NULL; //Current running task
 extern void sched_yield(void);
 
 
-/* TODO: Lab5
+/* 
  * 1. Find a free task structure for the new task,
  *    the global task list is in the array "tasks".
  *    You should find task that is in the state "TASK_FREE"
@@ -120,7 +120,7 @@ int task_create()
         struct PageInfo* pp = page_alloc(ALLOC_ZERO);
         if ( !pp )
             return -1;
-        if ( page_insert(ts->pgdir, pp, va, PTE_W | PTE_U) )
+        if ( page_insert(ts->pgdir, pp, (void*)va, PTE_W | PTE_U) )
             return -1;
     }
 
