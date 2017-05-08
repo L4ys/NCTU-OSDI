@@ -616,7 +616,7 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
  * You should map the kernel part memory with appropriate permission
  * Return a pointer to newly created page directory
  *
- * TODO: Lab6
+ * Lab6
  * You should also map:
  * 1. per-CPU kernel stack
  * 2. MMIO region for local apic
@@ -625,14 +625,20 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 pde_t *
 setupkvm()
 {
+    extern uint32_t * lapic;
+    extern physaddr_t lapicaddr;
+
     pde_t *pgdir = NULL;
     struct PageInfo* pp = page_alloc(ALLOC_ZERO);
     if ( pp ) {
         pgdir = page2kva(pp);
         boot_map_region(pgdir, UPAGES, ROUNDUP((sizeof(struct PageInfo) * npages), PGSIZE), PADDR(pages), PTE_U);
-        boot_map_region(pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
         boot_map_region(pgdir, KERNBASE, ~KERNBASE + 1, 0, PTE_W);
         boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, PTE_W);
+        boot_map_region(pgdir, lapic, PGSIZE, lapicaddr, PTE_PCD | PTE_PWT | PTE_W);
+        int i;
+        for ( i = 0 ; i < NCPU ; ++i )
+            boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W | PTE_P);
     }
     return pgdir;
 }
