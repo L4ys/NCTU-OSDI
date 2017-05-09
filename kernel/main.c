@@ -13,7 +13,6 @@
 
 extern void init_video(void);
 static void boot_aps(void);
-extern Task *cur_task;
 
 void kernel_main(void)
 {
@@ -41,7 +40,7 @@ void kernel_main(void)
     /* Enable interrupt */
     __asm __volatile("sti");
 
-    lcr3(PADDR(cur_task->pgdir));
+    lcr3(PADDR(thiscpu->cpu_task->pgdir));
 
     /* Move to user mode */
     asm volatile("movl %0,%%eax\n\t" \
@@ -51,7 +50,7 @@ void kernel_main(void)
             "pushl %2\n\t" \
             "pushl %3\n\t" \
             "iret\n" \
-            :: "m" (cur_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (cur_task->tf.tf_eip)
+            :: "m" (thiscpu->cpu_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (thiscpu->cpu_task->tf.tf_eip)
             :"ax");
 }
 
@@ -123,7 +122,7 @@ void mp_main(void)
      * 3. Per-CPU current task pointer
      *   
      *    Since each CPU can run different user process simultaneously,
-     *    we redefined the symbol cur_task to refer to cpus[cpunum()].
+     *    we redefined the symbol thiscpu->cpu_task to refer to cpus[cpunum()].
      *    cpu_task (or thiscpu->cpu_task), which points to the task
      *    currently executing on the current CPU (the CPU on which the 
      *    code is running) 
@@ -143,7 +142,7 @@ void mp_main(void)
      *    Your code should pass the new check in check_kern_pgdir().
      *
      * 2. chage per-CPU current task pointer and TSS descriptor ( the tss and
-     *    cur_task variables defined in kernel/task.c will no longer be useful.)
+     *    thiscpu->cpu_task variables defined in kernel/task.c will no longer be useful.)
      *
      * 3. init per-CPU lapic
      *

@@ -274,7 +274,7 @@ void task_init()
 	task_init_percpu();
 }
 
-// Lab6 TODO
+// Lab6
 //
 // Please modify this function to:
 //

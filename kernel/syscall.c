@@ -23,7 +23,6 @@ int32_t do_getc()
 int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
 	int32_t retVal = -1;
-	extern Task *cur_task;
 
 	switch (syscallno)
 	{
@@ -41,7 +40,7 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 		break;
 
 	case SYS_getpid:
-        retVal = cur_task->task_id;
+        retVal = thiscpu->cpu_task->task_id;
 		break;
 
 	case SYS_getcid:
@@ -50,8 +49,8 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 		break;
 
 	case SYS_sleep:
-        cur_task->state = TASK_SLEEP;
-        cur_task->remind_ticks = a1;
+        thiscpu->cpu_task->state = TASK_SLEEP;
+        thiscpu->cpu_task->remind_ticks = a1;
         sched_yield();
 		break;
 
