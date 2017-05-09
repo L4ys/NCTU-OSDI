@@ -6,7 +6,7 @@
   do { env_pop_tf(&((ts)->tf)); } while(0)
 
 //
-// TODO: Lab6
+// Lab6
 // Modify your Round-robin scheduler to fit the multi-core
 // You should:
 //
@@ -29,11 +29,16 @@ void sched_yield(void)
 {
 	extern Task tasks[];
 
-    int pid;
-    for ( pid = ((thiscpu->cpu_task->task_id + 1) % NR_TASKS); // starts from next
-          pid != thiscpu->cpu_task->task_id;
-          pid = (pid + 1) % NR_TASKS )
+    if ( !thiscpu->cpu_task )
+        return;
+
+    int pid = 0;
+    int i;
+    for ( i = ((thiscpu->cpu_rq.index + 1) % thiscpu->cpu_rq.ntasks); // starts from next
+          i != thiscpu->cpu_rq.index;
+          i = (i + 1) % thiscpu->cpu_rq.ntasks )
     {
+        pid = thiscpu->cpu_rq.tasks[i];
         if ( tasks[pid].state == TASK_RUNNABLE )
             break;
     }

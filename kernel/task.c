@@ -329,6 +329,10 @@ void task_init_percpu()
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
 	thiscpu->cpu_task->tf.tf_eip = (uint32_t)(bootcpu->cpu_id == thiscpu->cpu_id ? user_entry:idle_entry);
 
+    thiscpu->cpu_rq.tasks[0] = i;
+    thiscpu->cpu_rq.index = 0;
+    thiscpu->cpu_rq.ntasks = 1;
+
 	/* Load GDT&LDT */
 	lgdt(&gdt_pd);
 
