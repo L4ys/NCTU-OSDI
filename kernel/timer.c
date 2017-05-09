@@ -20,7 +20,7 @@ void set_timer(int hz)
 
 /* It is timer interrupt handler */
 //
-// TODO: Lab6
+// Lab6
 // Modify your timer_handler to support Multi processor
 // Don't forget to acknowledge the interrupt using lapic_eoi()
 //
@@ -33,6 +33,7 @@ void timer_handler(struct Trapframe *tf)
 
     extern Task tasks[];
 
+    lapic_eoi();
     if (thiscpu->cpu_task != NULL)
     {
         /*
@@ -45,12 +46,13 @@ void timer_handler(struct Trapframe *tf)
          * 4. sched_yield() if the time is up for current task
          *
          */
-        for ( i = 0; i < NR_TASKS; ++i ) {
-            if ( tasks[i].state == TASK_SLEEP &&
-                    --tasks[i].remind_ticks <= 0 )
-                tasks[i].state = TASK_RUNNABLE;
+        for ( i = 0; i < thiscpu->cpu_rq.ntasks; ++i ) {
+            int pid = thiscpu->cpu_rq.tasks[i];
+            if ( tasks[pid].state == TASK_SLEEP &&
+                    --tasks[pid].remind_ticks <= 0 )
+                tasks[pid].state = TASK_RUNNABLE;
         }
-        if ( --thiscpu->cpu_task->remind_ticks <=0 ) {
+        if ( --thiscpu->cpu_task->remind_ticks <= 0 ) {
             thiscpu->cpu_task->state = TASK_RUNNABLE;
             sched_yield();
         }
