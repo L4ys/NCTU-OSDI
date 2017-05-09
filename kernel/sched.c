@@ -25,27 +25,22 @@
 //    (do not schedule idle task if there are still another process can run)	
 //
 //
-void sched_yield(void)
-{
-	extern Task tasks[];
+void sched_yield(void) {
+    extern Task tasks[];
 
-    if ( !thiscpu->cpu_task )
-        return;
-
-    int pid = 0;
+    int index = thiscpu->cpu_task ? thiscpu->cpu_rq.index: 0;
     int i;
-    for ( i = ((thiscpu->cpu_rq.index + 1) % thiscpu->cpu_rq.ntasks); // starts from next
-          i != thiscpu->cpu_rq.index;
-          i = (i + 1) % thiscpu->cpu_rq.ntasks )
-    {
-        pid = thiscpu->cpu_rq.tasks[i];
-        if ( tasks[pid].state == TASK_RUNNABLE )
-            break;
-    }
+    for ( i = 0 ; i < thiscpu->cpu_rq.ntasks; ++i ) {
+        index = (index + 1) % thiscpu->cpu_rq.ntasks;
 
-    thiscpu->cpu_task = &tasks[pid];
-    thiscpu->cpu_task->state = TASK_RUNNING;
-    thiscpu->cpu_task->remind_ticks = TIME_QUANT;
-    lcr3(PADDR(thiscpu->cpu_task->pgdir));
-    ctx_switch(thiscpu->cpu_task);
+        int pid = thiscpu->cpu_rq.tasks[index];
+        if ( tasks[pid].state == TASK_RUNNABLE ) {
+            thiscpu->cpu_task = &(tasks[pid]);
+            thiscpu->cpu_task->state = TASK_RUNNING;
+            thiscpu->cpu_task->remind_ticks = TIME_QUANT;
+            thiscpu->cpu_rq.index = index;
+            lcr3(PADDR(thiscpu->cpu_task->pgdir));
+            ctx_switch(thiscpu->cpu_task);
+        }
+    }
 }
