@@ -6,6 +6,7 @@
 #include <kernel/task.h>
 #include <kernel/mem.h>
 #include <kernel/cpu.h>
+#include <kernel/spinlock.h>
 
 // Global descriptor table.
 //
@@ -51,7 +52,6 @@ struct Pseudodesc gdt_pd = {
 
 
 
-static struct tss_struct tss;
 Task tasks[NR_TASKS];
 
 extern char bootstack[];
@@ -65,6 +65,8 @@ uint32_t UTEXT_SZ;
 uint32_t UDATA_SZ;
 uint32_t UBSS_SZ;
 uint32_t URODATA_SZ;
+
+struct spinlock task_lock;
 
 extern void sched_yield(void);
 
@@ -96,6 +98,8 @@ extern void sched_yield(void);
  */
 int task_create()
 {
+    spin_lock(&task_lock);
+
 	Task *ts = NULL;
 
 	/* Find a free task structure */
@@ -106,8 +110,10 @@ int task_create()
             break;
         }
 
-    if ( !ts )
+    if ( !ts ) {
+        spin_unlock(&task_lock);
         return -1;
+    }
 
   /* Setup Page Directory and pages for kernel*/
   if (!(ts->pgdir = setupkvm()))
@@ -137,6 +143,7 @@ int task_create()
     ts->parent_id = thiscpu->cpu_task ? thiscpu->cpu_task->task_id:0;
     ts->remind_ticks = TIME_QUANT;
     ts->state = TASK_RUNNABLE;
+    spin_unlock(&task_lock);
     return pid;
 }
 
@@ -172,7 +179,7 @@ static void task_free(int pid)
     pgdir_remove(tasks[pid].pgdir);
 }
 
-// Lab6 TODO
+// Lab6
 //
 // Modify it so that the task will be removed form cpu runqueue
 // ( we not implement signal yet so do not try to kill process
@@ -180,11 +187,22 @@ static void task_free(int pid)
 //
 void sys_kill(int pid)
 {
-	if ( pid > 0 && pid < NR_TASKS ) {
+    if ( pid > 0 && pid < NR_TASKS && thiscpu->cpu_rq.ntasks ) {
+        int i;
+        for ( i = 0 ; i < thiscpu->cpu_rq.ntasks; i++ ) {
+            if ( thiscpu->cpu_rq.tasks[i] == pid ) {
+                memmove(&thiscpu->cpu_rq.tasks[i], &thiscpu->cpu_rq.tasks[i+1], (thiscpu->cpu_rq.ntasks - i - 1) * sizeof(int));
+                --thiscpu->cpu_rq.ntasks;
+                break;
+            }
+        }
         tasks[pid].state = TASK_FREE;
         task_free(pid);
-        sched_yield();
-	}
+        if ( thiscpu->cpu_task->task_id == pid ) {
+            thiscpu->cpu_task = NULL;
+            sched_yield();
+        }
+    }
 }
 
 /* 
@@ -251,11 +269,12 @@ int sys_fork()
     int min = NR_TASKS * NCPU + 1;
     int cid = 0;
     int i;
-    for ( i = 0; i < ncpu; ++i )
+    for ( i = 0; i < ncpu; ++i ) {
         if ( cpus[i].cpu_rq.ntasks < min ) {
             min = cpus[i].cpu_rq.ntasks;
             cid = i;
         }
+    }
 
     cpus[cid].cpu_rq.tasks[cpus[cid].cpu_rq.ntasks++] = pid;
 
@@ -269,13 +288,15 @@ int sys_fork()
 void task_init()
 {
   extern int user_entry();
-	int i;
+  spin_initlock(&task_lock);
+
   UTEXT_SZ = (uint32_t)(UTEXT_end - UTEXT_start);
   UDATA_SZ = (uint32_t)(UDATA_end - UDATA_start);
   UBSS_SZ = (uint32_t)(UBSS_end - UBSS_start);
   URODATA_SZ = (uint32_t)(URODATA_end - URODATA_start);
 
 	/* Initial task sturcture */
+	int i;
 	for (i = 0; i < NR_TASKS; i++)
 	{
 		memset(&(tasks[i]), 0, sizeof(Task));
@@ -298,6 +319,7 @@ void task_init()
 //
 // 4. init per-CPU TSS
 //
+
 void task_init_percpu()
 {
 	int i;
@@ -306,16 +328,16 @@ void task_init_percpu()
 	
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	memset(&(tss), 0, sizeof(tss));
-    tss.ts_esp0 = (uint32_t)percpu_kstacks[thiscpu->cpu_id] + KSTKSIZE;
-	tss.ts_ss0 = GD_KD;
+	memset(&(thiscpu->cpu_tss), 0, sizeof(thiscpu->cpu_tss));
+    thiscpu->cpu_tss.ts_esp0 = (uint32_t)percpu_kstacks[thiscpu->cpu_id] + KSTKSIZE;
+	thiscpu->cpu_tss.ts_ss0 = GD_KD;
 
 	// fs and gs stay in user data segment
-	tss.ts_fs = GD_UD | 0x03;
-	tss.ts_gs = GD_UD | 0x03;
+	thiscpu->cpu_tss.ts_fs = GD_UD | 0x03;
+	thiscpu->cpu_tss.ts_gs = GD_UD | 0x03;
 
 	/* Setup TSS in GDT */
-	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct tss_struct), 0);
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t)(&thiscpu->cpu_tss), sizeof(struct tss_struct), 0);
 	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id].sd_s = 0;
 
 	/* Setup first task */
@@ -327,7 +349,7 @@ void task_init_percpu()
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
 	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
-	thiscpu->cpu_task->tf.tf_eip = (uint32_t)(bootcpu->cpu_id == thiscpu->cpu_id ? user_entry:idle_entry);
+	thiscpu->cpu_task->tf.tf_eip = (uint32_t)(thiscpu->cpu_id == bootcpu->cpu_id ? user_entry:idle_entry);
 
     thiscpu->cpu_rq.tasks[0] = i;
     thiscpu->cpu_rq.index = 0;
