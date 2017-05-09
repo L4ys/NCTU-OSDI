@@ -136,7 +136,7 @@ int task_create()
 
 	/* Setup task structure (task_id and parent_id) */
     ts->task_id = pid;
-    ts->parent_id = cur_task ? cur_task->task_id:0;
+    ts->parent_id = thiscpu->cpu_task ? thiscpu->cpu_task->task_id:0;
     ts->remind_ticks = TIME_QUANT;
     ts->state = TASK_RUNNABLE;
     return pid;
@@ -227,15 +227,15 @@ int sys_fork()
     if ( pid == -1 )
         return -1;
 
-    if ((uint32_t)cur_task)
+    if ((uint32_t)thiscpu->cpu_task)
     {
         Task* child = &tasks[pid];
-        child->tf = cur_task->tf;
+        child->tf = thiscpu->cpu_task->tf;
 
         // Copy stack
 		int va;
 		for ( va = USTACKTOP - USR_STACK_SIZE; va < USTACKTOP; va += PGSIZE ) {
-            pte_t* pte_src = pgdir_walk(cur_task->pgdir, (void*)va, 0);
+            pte_t* pte_src = pgdir_walk(thiscpu->cpu_task->pgdir, (void*)va, 0);
             pte_t* pte_dst = pgdir_walk(child->pgdir, (void*)va, 0);
             memcpy(KADDR(PTE_ADDR(*pte_dst)), KADDR(PTE_ADDR(*pte_src)), PGSIZE);
 		}
@@ -289,8 +289,6 @@ void task_init()
 //
 void task_init_percpu()
 {
-	
-
 	int i;
 	extern int user_entry();
 	extern int idle_entry();
@@ -298,7 +296,7 @@ void task_init_percpu()
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
 	memset(&(tss), 0, sizeof(tss));
-	tss.ts_esp0 = (uint32_t)bootstack + KSTKSIZE;
+    tss.ts_esp0 = (uint32_t)percpu_kstacks[thiscpu->cpu_id] + KSTKSIZE;
 	tss.ts_ss0 = GD_KD;
 
 	// fs and gs stay in user data segment
@@ -306,19 +304,19 @@ void task_init_percpu()
 	tss.ts_gs = GD_UD | 0x03;
 
 	/* Setup TSS in GDT */
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct tss_struct), 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct tss_struct), 0);
+	gdt[(GD_TSS0 >> 3) + thiscpu->cpu_id].sd_s = 0;
 
 	/* Setup first task */
 	i = task_create();
-	cur_task = &(tasks[i]);
+	thiscpu->cpu_task = &(tasks[i]);
 
 	/* For user program */
-	setupvm(cur_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-	setupvm(cur_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-	setupvm(cur_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-	setupvm(cur_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
-	cur_task->tf.tf_eip = (uint32_t)user_entry;
+	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+	setupvm(thiscpu->cpu_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+	thiscpu->cpu_task->tf.tf_eip = (uint32_t)(bootcpu->cpu_id == thiscpu->cpu_id ? user_entry:idle_entry);
 
 	/* Load GDT&LDT */
 	lgdt(&gdt_pd);
@@ -327,7 +325,7 @@ void task_init_percpu()
 	lldt(0);
 
 	// Load the TSS selector 
-	ltr(GD_TSS0);
+	ltr(GD_TSS0 + (thiscpu->cpu_id << 3));
 
-	cur_task->state = TASK_RUNNING;
+	thiscpu->cpu_task->state = TASK_RUNNING;
 }
