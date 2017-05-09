@@ -66,8 +66,6 @@ uint32_t UDATA_SZ;
 uint32_t UBSS_SZ;
 uint32_t URODATA_SZ;
 
-Task *cur_task = NULL; //Current running task
-
 extern void sched_yield(void);
 
 
@@ -215,7 +213,7 @@ void sys_kill(int pid)
  */
 
 //
-// Lab6 TODO:
+// Lab6
 //
 // Modify it so that the task will disptach to different cpu runqueue
 // (please try to load balance, don't put all task into one cpu)
@@ -248,6 +246,19 @@ int sys_fork()
 
         child->tf.tf_regs.reg_eax = 0;
     }
+
+    // Find cpu with least tasks
+    int min = NR_TASKS * NCPU + 1;
+    int cid = 0;
+    int i;
+    for ( i = 0; i < ncpu; ++i )
+        if ( cpus[i].cpu_rq.ntasks < min ) {
+            min = cpus[i].cpu_rq.ntasks;
+            cid = i;
+        }
+
+    cpus[cid].cpu_rq.tasks[cpus[cid].cpu_rq.ntasks++] = pid;
+
     return pid;
 }
 

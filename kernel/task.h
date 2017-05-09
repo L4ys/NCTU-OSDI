@@ -29,7 +29,7 @@ typedef struct
 	
 } Task;
 
-// TODO Lab6
+// Lab6
 // 
 // Design your Runqueue structure for cpu
 // your runqueue sould have at least two
@@ -41,7 +41,9 @@ typedef struct
 //
 typedef struct
 {
-
+    int index;
+    int tasks[NR_TASKS];
+    int ntasks;
 } Runqueue;
 
 
@@ -49,7 +51,7 @@ void task_init();
 void task_init_percpu();
 void env_pop_tf(struct Trapframe *tf);
 
-/* TODO Lab 5
+/* Lab 5
  * Interface for real implementation of kill and fork
  * Since their real implementation should be in kernel/task.c
  */
