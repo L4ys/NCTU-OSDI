@@ -648,7 +648,7 @@ setupkvm()
         boot_map_region(pgdir, lapic, PGSIZE, lapicaddr, PTE_PCD | PTE_PWT | PTE_W);
         int i;
         for ( i = 0 ; i < NCPU ; ++i )
-            boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W | PTE_P);
+            boot_map_region(pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W | PTE_P);
     }
     return pgdir;
 }
