@@ -15,9 +15,9 @@ CFLAGS += -I.
 
 OBJDIR = .
 
-CPUS ?= 1
-
 .DEFAULT_GOAL := all
+
+CPUS ?= 1
 
 include boot/Makefile
 include kernel/Makefile
@@ -33,12 +33,18 @@ clean:
 	rm -rf $(OBJDIR)/lib/*.o
 	rm -rf $(OBJDIR)/user/*.o
 	rm -rf $(OBJDIR)/user/*.asm
+	rm -rf $(OBJDIR)/kernel/fs/*.o $(OBJDIR)/kernel/fs/fat/*.o
+	rm -rf $(OBJDIR)/kernel/drv/*.o
+	rm -rf ./lab7.img
 
-qemu: all
-	qemu-system-i386 -hda kernel.img -monitor stdio -smp $(CPUS)
+img:
+	qemu-img create -f raw lab7.img 32M
 
-debug: all
-	qemu-system-i386 -hda kernel.img -curses -s -S -smp $(CPUS)
+qemu: all img
+	qemu-system-i386 -hda kernel.img -hdb lab7.img -monitor stdio -smp $(CPUS)
 
-run: all
-	qemu-system-i386 -hda kernel.img -curses -smp $(CPUS)
+debug: all img
+	qemu-system-i386 -hda kernel.img -hdb lab7.img -curses -s -S -smp $(CPUS)
+
+run: all img
+	qemu-system-i386 -hda kernel.img -hdb lab7.img -curses -smp $(CPUS)
