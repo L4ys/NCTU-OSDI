@@ -52,18 +52,17 @@ extern struct fs_fd fd_table[FS_FD_MAX];
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
-    int fd = -1;
-    int i;
-    for ( i = 0 ; i < FS_FD_MAX ; ++i )
-        if ( !strcmp(fd_table[i].path, file) && flags == fd_table[i].flags )
+   int fd = -1;
+   int i ;
+    for ( i = 0 ; i < FS_FD_MAX ; ++i ) {
+        if ( !strcmp(fd_table[i].path, file) && flags == fd_table[i].flags ) {
+            fd = i;
             break;
-
-    if ( i == -1 )
-        fd = fd_new();
-    else
-        fd_get(fd = i);
-
-    if ( fd == -1 )
+        }
+    }
+    if ( fd != -1 )
+        fd_get(fd);
+    if ( fd == -1 && (fd = fd_new()) == -1 )
         return STATUS_ENOSPC;
 
     int ret = file_open(&fd_table[fd], file, flags);
@@ -72,7 +71,6 @@ int sys_open(const char *file, int flags, int mode)
         return ret;
     }
     fd_table[fd].size = ((FIL*)fd_table[fd].data)->obj.objsize;
-
     return fd;
 }
 
@@ -81,12 +79,15 @@ int sys_close(int fd)
     if ( fd < 0 || fd >= FS_FD_MAX )
         return -STATUS_EINVAL;
 
-    fd_put(&fd_table[fd]);
-    if ( fd_table[fd].ref_count == 0 ) {
-        memset(&fd_table[fd], 0, sizeof(fd_table[fd]));
-        return file_close(&fd_table[fd]);
+    int ret = 0;
+    if ( fd_table[fd].ref_count == 1 ) {
+        fd_table[fd].size = 0;
+        fd_table[fd].pos = 0;
+        fd_table[fd].path[0] = 0;
+        ret = file_close(&fd_table[fd]);
     }
-    return 0;
+    fd_put(&fd_table[fd]);
+    return ret;
 }
 int sys_read(int fd, void *buf, size_t len)
 {
