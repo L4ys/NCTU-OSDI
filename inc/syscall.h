@@ -1,6 +1,7 @@
 #ifndef USR_SYSCALL_H
 #define USR_SYSCALL_H
 #include <inc/types.h>
+#include <kernel/fs/fat/ff.h>
 
 /* system call numbers */
 enum {
@@ -22,6 +23,8 @@ enum {
     SYS_write,
     SYS_lseek,
     SYS_unlink,
+    SYS_opendir,
+    SYS_closedir,
     SYS_readdir,
     NSYSCALLS
 };
@@ -56,5 +59,7 @@ int sys_read(int fd, void *buf, size_t len);
 int sys_write(int fd, const void *buf, size_t len);
 off_t sys_lseek(int fd, off_t offset, int whence);
 int sys_unlink(const char *pathname);
-int sys_readdir(int fd,  char *buf ,int *type, unsigned long *size);
+int sys_opendir(DIR *dir, const char *pathname);
+int sys_closedir(DIR *dir);
+int sys_readdir(DIR *dir, FILINFO *finfo);
 #endif

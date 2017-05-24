@@ -196,6 +196,20 @@ int file_unlink(const char *path)
     return mapposix(ret);
 }
 
+int file_opendir(DIR *dir, const char *pathname)
+{
+	return mapposix(fat_fs.ops->opendir(dir, pathname));
+}
+
+int file_readdir(DIR *dir, FILINFO *finfo)
+{
+	return mapposix(fat_fs.ops->readdir(dir, finfo));
+}
+
+int file_closedir(DIR *dir)
+{
+	return mapposix(fat_fs.ops->closedir(dir));
+}
 
 /**
  * @ingroup Fd

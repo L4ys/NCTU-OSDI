@@ -1,5 +1,6 @@
 #include <inc/syscall.h>
 #include <inc/trap.h>
+#include <kernel/fs/fat/ff.h>
 
 #define SYSCALL_NOARG(name, ret_t) \
    ret_t name(void) { return syscall((SYS_##name), 0, 0, 0, 0, 0); }
@@ -54,6 +55,9 @@ SYSCALL_3ARG(read, int, int, void *, size_t)
 SYSCALL_3ARG(write, int, int, const void *, size_t)
 SYSCALL_3ARG(lseek, off_t, int, off_t, int)
 SYSCALL_1ARG(unlink, int, const char *)
+SYSCALL_2ARG(opendir, int, DIR*, const char*)
+SYSCALL_1ARG(closedir, int, DIR*)
+SYSCALL_2ARG(readdir, int, DIR*, FILINFO*)
 /////////////////////////////
 SYSCALL_NOARG(getc, int)
 SYSCALL_NOARG(getcid, int32_t)

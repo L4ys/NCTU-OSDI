@@ -3,14 +3,13 @@
 #include <inc/string.h>
 #include <inc/shell.h>
 #include <inc/assert.h> 
+#include <kernel/fs/fat/ff.h>
 
 char hist[SHELL_HIST_MAX][BUF_LEN];
 
 int hist_head;
 int hist_tail;
 int hist_curr;
-
-/* TODO: Lab7, Please add and implement "ls", "touch" and "rm" command */
 
 
 /*  Prototypes  */
@@ -538,6 +537,7 @@ int fs_speed_test(int argc, char **argv)
 
 int ls(int argc, char **argv)
 {
+    DIR dir;
     return 0;
 }
 
