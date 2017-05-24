@@ -149,7 +149,7 @@ int fs_init()
 */
 int fs_mount(const char* device_name, const char* path, const void* data)
 {
-	if ( !strcmp(device_name, "elmfat") ){
+	if ( !strcmp(device_name, fat_fs.ops->dev_name) ){
 		strcpy(fat_fs.path, path);
 		return mapposix(fat_fs.ops->mount(&fat_fs, data));
 	}
