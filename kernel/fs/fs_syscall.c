@@ -4,8 +4,11 @@
 // It's handel the file system APIs 
 #include <inc/stdio.h>
 #include <inc/syscall.h>
+#include <inc/string.h>
+#include <kernel/fs/fat/ff.h>
 #include <fs.h>
 
+extern struct fs_fd fd_table[FS_FD_MAX];
 /*TODO: Lab7, file I/O system call interface.*/
 /*Note: Here you need handle the file system call from user.
  *       1. When user open a new file, you can use the fd_new() to alloc a file object(struct fs_fd)
@@ -49,31 +52,96 @@
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
-/* TODO */
+    int fd = -1;
+    int i;
+    for ( i = 0 ; i < FS_FD_MAX ; ++i )
+        if ( !strcmp(fd_table[i].path, file) && flags == fd_table[i].flags )
+            break;
+
+    if ( i == -1 )
+        fd = fd_new();
+    else
+        fd_get(fd = i);
+
+    if ( fd == -1 )
+        return STATUS_ENOSPC;
+
+    int ret = file_open(&fd_table[fd], file, flags);
+    if ( ret < 0 ) {
+        sys_close(fd);
+        return ret;
+    }
+    fd_table[fd].size = ((FIL*)fd_table[fd].data)->obj.objsize;
+
+    return fd;
 }
 
 int sys_close(int fd)
 {
-/* TODO */
+    if ( fd < 0 || fd >= FS_FD_MAX )
+        return -STATUS_EINVAL;
+
+    fd_put(&fd_table[fd]);
+    if ( fd_table[fd].ref_count == 0 ) {
+        memset(&fd_table[fd], 0, sizeof(fd_table[fd]));
+        return file_close(&fd_table[fd]);
+    }
+    return 0;
 }
 int sys_read(int fd, void *buf, size_t len)
 {
-/* TODO */
+    if ( len < 0 || !buf )
+        return -STATUS_EINVAL;
+    if ( fd < 0 || fd >= FS_FD_MAX )
+        return -STATUS_EBADF;
+    if ( len == 0 )
+        return 0;
+
+    int left = fd_table[fd].size - fd_table[fd].pos;
+    return file_read(&fd_table[fd], buf, len > left ? left:len);
 }
 int sys_write(int fd, const void *buf, size_t len)
 {
-/* TODO */
+    if ( len < 0 || !buf )
+        return -STATUS_EINVAL;
+    if ( fd < 0 || fd >= FS_FD_MAX)
+        return -STATUS_EBADF;
+    if ( len == 0 )
+        return 0;
+
+    int ret = file_write(&fd_table[fd], buf, len);
+    fd_table[fd].size = ((FIL*)fd_table[fd].data)->obj.objsize;
+
+    return ret;
 }
 
 /* Note: Check the whence parameter and calcuate the new offset value before do file_seek() */
 off_t sys_lseek(int fd, off_t offset, int whence)
 {
-/* TODO */
+    if ( fd < 0 || fd >= FS_FD_MAX )
+        return -STATUS_EBADF;
+    if ( offset < 0 || whence < 0 )
+        return -STATUS_EINVAL;
+
+    int new_offset = 0;
+    if ( whence == SEEK_SET )
+        new_offset = offset;
+    else if ( whence == SEEK_CUR )
+        new_offset = fd_table[fd].pos + offset;
+    else if( whence == SEEK_END )
+        new_offset = fd_table[fd].size + offset;
+
+    if ( new_offset < 0 )
+        return -STATUS_EINVAL;
+
+    fd_table[fd].pos = new_offset;
+
+    return file_lseek(&fd_table[fd], new_offset);
 }
 
 int sys_unlink(const char *pathname)
 {
-/* TODO */ 
+    return file_unlink(pathname);
 }
 
 
