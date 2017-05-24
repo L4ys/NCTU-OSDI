@@ -174,7 +174,6 @@ int file_write(struct fs_fd* fd, const void *buf, size_t len)
 {
     int ret = fat_fs.ops->write(fd, buf, len);
     return ret < 0 ? mapposix(ret):ret;
-
 }
 
 int file_close(struct fs_fd* fd)

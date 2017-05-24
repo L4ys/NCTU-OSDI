@@ -23,6 +23,7 @@ include boot/Makefile
 include kernel/Makefile
 
 all: boot/boot kernel/system
+	qemu-img create -f raw lab7.img 32M
 	dd if=/dev/zero of=$(OBJDIR)/kernel.img count=10000 2>/dev/null
 	dd if=$(OBJDIR)/boot/boot of=$(OBJDIR)/kernel.img conv=notrunc 2>/dev/null
 	dd if=$(OBJDIR)/kernel/system of=$(OBJDIR)/kernel.img seek=1 conv=notrunc 2>/dev/null
@@ -37,14 +38,11 @@ clean:
 	rm -rf $(OBJDIR)/kernel/drv/*.o
 	rm -rf ./lab7.img
 
-img:
-	qemu-img create -f raw lab7.img 32M
-
-qemu: all img
+qemu: all
 	qemu-system-i386 -hda kernel.img -hdb lab7.img -monitor stdio -smp $(CPUS)
 
-debug: all img
+debug: all
 	qemu-system-i386 -hda kernel.img -hdb lab7.img -curses -s -S -smp $(CPUS)
 
-run: all img
+run: all
 	qemu-system-i386 -hda kernel.img -hdb lab7.img -curses -smp $(CPUS)

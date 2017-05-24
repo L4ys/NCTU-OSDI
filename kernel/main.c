@@ -37,9 +37,8 @@ void kernel_main(void)
     syscall_init();
     disk_init();
     disk_test();
-    /*TODO: Lab7, uncommend it when you finish Lab7 3.1 part */
-    // fs_test();
-    // fs_init();
+    fs_test();
+    fs_init();
     boot_aps();
 
     printk("Kernel code base start=0x%08x to = 0x%08x\n", stext, etext);

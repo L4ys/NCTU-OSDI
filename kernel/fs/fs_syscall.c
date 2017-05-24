@@ -52,18 +52,9 @@ extern struct fs_fd fd_table[FS_FD_MAX];
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
-   int fd = -1;
-   int i ;
-    for ( i = 0 ; i < FS_FD_MAX ; ++i ) {
-        if ( !strcmp(fd_table[i].path, file) && flags == fd_table[i].flags ) {
-            fd = i;
-            break;
-        }
-    }
-    if ( fd != -1 )
-        fd_get(fd);
-    if ( fd == -1 && (fd = fd_new()) == -1 )
-        return STATUS_ENOSPC;
+	int fd = fd_new();
+    if ( fd == -1 )
+        return -STATUS_ENOSPC;
 
     int ret = file_open(&fd_table[fd], file, flags);
     if ( ret < 0 ) {
