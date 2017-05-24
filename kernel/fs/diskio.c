@@ -150,8 +150,6 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
         case GET_BLOCK_SIZE:
             *retVal = SECTOR_SIZE;
             break;
-        default:
-            return -1;
     }
     return RES_OK;
 }
@@ -165,3 +163,4 @@ DWORD get_fattime (void)
     extern unsigned long sys_get_ticks();
     return sys_get_ticks();
 }
+
