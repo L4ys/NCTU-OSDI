@@ -66,28 +66,6 @@ int fat_lseek(struct fs_fd* file, off_t offset)
 */
 int fat_open(struct fs_fd* file)
 {
-    int elm_flags = 0;
-    if(file->flags == O_RDONLY)
-        elm_flags |= FA_READ;
-    if(file->flags & O_WRONLY)
-        elm_flags |= FA_WRITE;
-    if(file->flags & O_RDWR)
-        elm_flags |= (FA_READ | FA_WRITE);
-    if(file->flags & O_ACCMODE)
-        elm_flags &= 0x3;
-    if((file->flags & O_CREAT) && !(file->flags & O_TRUNC))
-        elm_flags |= FA_CREATE_NEW;
-    if(file->flags & O_TRUNC)
-        elm_flags |= FA_CREATE_ALWAYS;
-    int ret = f_open(file->data, file->path, elm_flags);
-    if(file->flags & O_APPEND){
-        fat_lseek(file, ((FIL*)file->data)->obj.objsize);
-    }
-    return -ret;
-}
-
-int fat_open2(struct fs_fd* file)
-{
 	int flags = 0;
 	if ( file->flags == O_RDONLY )
 		flags = FA_READ;
@@ -153,6 +131,4 @@ struct fs_ops elmfat_ops = {
     .lseek = fat_lseek,
     .unlink = fat_unlink
 };
-
-
 
