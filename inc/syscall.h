@@ -61,5 +61,5 @@ off_t sys_lseek(int fd, off_t offset, int whence);
 int sys_unlink(const char *pathname);
 int sys_opendir(DIR *dir, const char *pathname);
 int sys_closedir(DIR *dir);
-int sys_readdir(DIR *dir, FILINFO *finfo);
+int sys_readdir(DIR *dir, FILINFO *finfno);
 #endif

@@ -310,7 +310,6 @@ int filetest4(int argc, char **argv)
     uassert(ret == -STATUS_EINVAL);
 
     ret = close(fd);
-    cprintf("ret=%d\n", ret);
     uassert(ret == STATUS_OK);
 
     fd = open("test4", O_WRONLY | O_CREAT, 0);
@@ -537,7 +536,21 @@ int fs_speed_test(int argc, char **argv)
 
 int ls(int argc, char **argv)
 {
-    DIR dir;
+    DIR dir = {0};
+    FILINFO finfo = {0};
+
+	if ( argv >= 1 ) {
+		if ( opendir(&dir, argv[1]) < 0 ) {
+			cprintf("File or Path not exist.\n");
+			return 0;
+		}
+
+		readdir(&dir, &finfo);
+		while ( finfo.fname[0] ) {
+            cprintf("%s type:%s size:%d\n", finfo.fname, finfo.fattrib & AM_DIR ? "DIR":"FILE", finfo.fsize);
+            readdir(&dir, &finfo);
+        }
+    }
     return 0;
 }
 
@@ -553,7 +566,6 @@ int rm(int argc, char **argv)
     if ( argc >= 1 ) {
         if ( unlink(argv[1]) < 0 ) {
             cprintf("Cannot remove %s\n", argv[1]);
-            return -1;
         }
     }
     return 0;
