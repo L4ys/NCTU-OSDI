@@ -55,6 +55,10 @@ int fat_mkfs(const char* device_name)
 {
     return -f_mkfs("/", 0, 0);
 }
+int fat_lseek(struct fs_fd* file, off_t offset)
+{
+    return -f_lseek(file->data, offset);
+}
 
 /* Note: Convert the POSIX's open flag to elmfat's flag.
 *        Example: if file->flags == O_RDONLY then open_mode = FA_READ
@@ -111,11 +115,7 @@ int fat_write(struct fs_fd* file, const void* buf, size_t count)
         file->size = file->pos;
     return bw;
 }
-int fat_lseek(struct fs_fd* file, off_t offset)
-{
-    return -f_lseek(file->data, offset);
-}
-int fat_unlink(struct fs_fd* file, const char *pathname)
+int fat_unlink(const char *pathname)
 {
     return -f_unlink(pathname);
 }

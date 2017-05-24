@@ -9,7 +9,7 @@
 #include <fs.h>
 
 extern struct fs_fd fd_table[FS_FD_MAX];
-/*TODO: Lab7, file I/O system call interface.*/
+/*  Lab7, file I/O system call interface.*/
 /*Note: Here you need handle the file system call from user.
  *       1. When user open a new file, you can use the fd_new() to alloc a file object(struct fs_fd)
  *       2. When user R/W or seek the file, use the fd_get() to get file object.
